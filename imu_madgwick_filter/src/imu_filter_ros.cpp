@@ -28,6 +28,7 @@
 #include "geometry_msgs/PoseStamped.h"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <Eigen/Dense>
 
 ImuFilterRos::ImuFilterRos(ros::NodeHandle nh, ros::NodeHandle nh_private)
     : nh_(nh),
@@ -258,15 +259,30 @@ void ImuFilterRos::imuMagCallback(const ImuMsg::ConstPtr& imu_msg_raw,
 
     /*** Compensate for hard iron ***/
     geometry_msgs::Vector3 mag_compensated;
-    mag_compensated.x = (mag_fld.x - mag_bias_.x)*m_soft_matrix[0] 
-                        +(mag_fld.y - mag_bias_.y)*m_soft_matrix[3];
-                        +(mag_fld.z - mag_bias_.z)*m_soft_matrix[6];
-    mag_compensated.y = (mag_fld.x - mag_bias_.x)*m_soft_matrix[1] 
-                        +(mag_fld.y - mag_bias_.y)*m_soft_matrix[4];
-                        +(mag_fld.z - mag_bias_.z)*m_soft_matrix[7];
-    mag_compensated.z = (mag_fld.x - mag_bias_.x)*m_soft_matrix[2] 
-                        +(mag_fld.y - mag_bias_.y)*m_soft_matrix[5];
-                        +(mag_fld.z - mag_bias_.z)*m_soft_matrix[8];
+    Eigen::Matrix3d S;
+    S << m_soft_matrix[0], m_soft_matrix[1], m_soft_matrix[2],
+        m_soft_matrix[3], m_soft_matrix[4], m_soft_matrix[5],
+        m_soft_matrix[6], m_soft_matrix[7], m_soft_matrix[8];   
+    Eigen::Matrix3d S_inv;
+    S_inv = S.inverse();
+
+    Eigen::Vector3d H;
+    H << mag_fld.x-mag_bias_.x, mag_fld.y- mag_bias_.y, mag_fld.z - mag_bias_.z;
+
+    Eigen::Vector3d M_final = S_inv * H;
+    mag_compensated.x = M_final.x();
+    mag_compensated.y = M_final.y();
+    mag_compensated.z = M_final.z();
+
+    // mag_compensated.x = (mag_fld.x - mag_bias_.x)*m_soft_matrix[0] 
+    //                     +(mag_fld.y - mag_bias_.y)*m_soft_matrix[1];
+    //                     +(mag_fld.z - mag_bias_.z)*m_soft_matrix[2];
+    // mag_compensated.y = (mag_fld.x - mag_bias_.x)*m_soft_matrix[3] 
+    //                     +(mag_fld.y - mag_bias_.y)*m_soft_matrix[4];
+    //                     +(mag_fld.z - mag_bias_.z)*m_soft_matrix[5];
+    // mag_compensated.z = (mag_fld.x - mag_bias_.x)*m_soft_matrix[6] 
+    //                     +(mag_fld.y - mag_bias_.y)*m_soft_matrix[7];
+    //                     +(mag_fld.z - mag_bias_.z)*m_soft_matrix[8];
     double roll = 0.0;
     double pitch = 0.0;
     double yaw = 0.0;

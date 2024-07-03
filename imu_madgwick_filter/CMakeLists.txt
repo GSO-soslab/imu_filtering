@@ -12,10 +12,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_geometry_msgs
   tf2_ros
+  
 )
 
 find_package(Boost REQUIRED COMPONENTS system thread)
-
+find_package(Eigen3 REQUIRED)
 # Generate dynamic parameters
 generate_dynamic_reconfigure_options(cfg/ImuFilterMadgwick.cfg)
 
@@ -31,6 +32,7 @@ catkin_package(
     sensor_msgs
     tf2_geometry_msgs
     tf2_ros
+    DEPENDS EIGEN3
   INCLUDE_DIRS include
   LIBRARIES imu_filter imu_filter_nodelet
 )
@@ -39,6 +41,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 
