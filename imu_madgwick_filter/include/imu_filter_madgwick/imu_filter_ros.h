@@ -99,6 +99,11 @@ class ImuFilterRos
     geometry_msgs::Vector3 mag_bias_;
     geometry_msgs::Vector3 gyro_bias_;
     geometry_msgs::Vector3 accel_bias_;
+    std::vector<double> m_soft_matrix={
+                                        1.0, 0.0, 0.0,
+                                        0.0, 1.0, 0.0,
+                                        0.0, 0.0, 1.0
+                                      };
 
     double orientation_variance_;
     ros::Duration time_jump_threshold_;

@@ -64,6 +64,15 @@ ImuFilterRos::ImuFilterRos(ros::NodeHandle nh, ros::NodeHandle nh_private)
         0, 0,
         yaw_offset_total_);  // Create this quaternion for yaw offset (radians)
 
+    //loading soft-iron distortion
+    nh_private.getParam("soft_iron_matrix", m_soft_matrix);
+    printf("soft-iron matrix is = ");
+    // Print the matrix
+    for (int i = 0; i < 9; ++i) {
+            printf("%lf,", m_soft_matrix[i]);
+    }
+    printf("\r\n");
+
     std::string world_frame;
     if (!nh_private_.getParam("world_frame", world_frame)) world_frame = "enu";
 
@@ -249,10 +258,15 @@ void ImuFilterRos::imuMagCallback(const ImuMsg::ConstPtr& imu_msg_raw,
 
     /*** Compensate for hard iron ***/
     geometry_msgs::Vector3 mag_compensated;
-    mag_compensated.x = mag_fld.x - mag_bias_.x;
-    mag_compensated.y = mag_fld.y - mag_bias_.y;
-    mag_compensated.z = mag_fld.z - mag_bias_.z;
-
+    mag_compensated.x = (mag_fld.x - mag_bias_.x)*m_soft_matrix[0] 
+                        +(mag_fld.y - mag_bias_.y)*m_soft_matrix[3];
+                        +(mag_fld.z - mag_bias_.z)*m_soft_matrix[6];
+    mag_compensated.y = (mag_fld.x - mag_bias_.x)*m_soft_matrix[1] 
+                        +(mag_fld.y - mag_bias_.y)*m_soft_matrix[4];
+                        +(mag_fld.z - mag_bias_.z)*m_soft_matrix[7];
+    mag_compensated.z = (mag_fld.x - mag_bias_.x)*m_soft_matrix[2] 
+                        +(mag_fld.y - mag_bias_.y)*m_soft_matrix[5];
+                        +(mag_fld.z - mag_bias_.z)*m_soft_matrix[8];
     double roll = 0.0;
     double pitch = 0.0;
     double yaw = 0.0;
